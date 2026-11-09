@@ -1,3 +1,28 @@
+# Khel Club Frontend — Walkover UI
+
+This branch renders match outcomes supplied by the API. **The frontend never computes or
+re-derives a result**; it only displays `outcome_type`, `outcome_label`, `requires_score`,
+`winner_team_id` and the normal score fields.
+
+Changed files:
+- `src/utils/matchOutcome.js` — `getOutcomeView()` and `DECLARABLE_OUTCOMES`
+- `src/components/common/OutcomeBadge/` — `OutcomeBadge`, `WinnerBadge`
+- `src/components/fixtures/TournamentFixtures.js`, `Fixtures.js`
+- `src/components/matchTable/MatchTable.js`, `components/refereeMatchTable/RefereeMatchTable.js`
+- `src/screen/referee/match/Match.js`, `src/components/matchOverlay/MatchOverlay.js`
+- `src/components/fixtures/KnockoutBracket.js`, `KnockoutBracket2.js`
+- `src/store/urls.js` — `updateMatchOutcome`
+
+To add an outcome (e.g. forfeit), add one entry to `DECLARABLE_OUTCOMES`, `{ key, label }`;
+the referee button, dialog and badges are data-driven.
+
+Run `npm run dev` and open **http://localhost:3000** (use `localhost`, not `127.0.0.1`, so the
+API base URL resolves correctly).
+
+Full design, schema and assumptions: `v0_backend/README.md`.
+
+## Original README
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
