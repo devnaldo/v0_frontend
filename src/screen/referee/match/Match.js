@@ -11,6 +11,8 @@ import toast from "react-hot-toast";
 import { TextField } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from "@mui/material";
+import { getOutcomeView } from "@/utils/matchOutcome";
+import { OutcomeBadge } from "@/components/common/OutcomeBadge/OutcomeBadge";
 
 const MatchScreen = ({ tournamentId, matchId }) => {
     const [scoreData, setScoreData] = useState(null);
@@ -206,6 +208,8 @@ const MatchScreen = ({ tournamentId, matchId }) => {
         return <div className={stl.error}>No match data available</div>;
     }
 
+    const outcomeView = getOutcomeView(scoreData);
+
     return (
         <div className={stl.container}>
             <div className={stl.header}>
@@ -222,6 +226,13 @@ const MatchScreen = ({ tournamentId, matchId }) => {
                         {matchStatus ? matchStatus.charAt(0).toUpperCase() + matchStatus.slice(1) : 'Unknown'}
                     </span>
                 </div>
+                {!outcomeView.isScored && (
+                    <div className={stl.infoItem}>
+                        <span className={stl.label}>Outcome:</span>
+                        <OutcomeBadge label={outcomeView.label} />
+                        <span className={stl.value}>Winner: {outcomeView.winnerPlayers}</span>
+                    </div>
+                )}
                 <div className={stl.infoItem}>
                     <span className={stl.label}>Tournament ID:</span>
                     <span className={stl.value}>{tournamentId}</span>
@@ -241,6 +252,7 @@ const MatchScreen = ({ tournamentId, matchId }) => {
                         onReset={() => resetScore("team1")}
                         formik={formik}
                         teamName="team1Score"
+                        disabled={!outcomeView.isScored}
                     />
 
                     <div className={stl.vs}>VS</div>
@@ -252,12 +264,13 @@ const MatchScreen = ({ tournamentId, matchId }) => {
                         onReset={() => resetScore("team2")}
                         formik={formik}
                         teamName="team2Score"
+                        disabled={!outcomeView.isScored}
                     />
                 </div>
 
                 <div className={stl.actions}>
-                    <button type="button" onClick={() => updateScore(false)}>Update</button>
-                    <button type="button" onClick={finalizeScore}>Final</button>
+                    <button type="button" onClick={() => updateScore(false)} disabled={!outcomeView.isScored}>Update</button>
+                    <button type="button" onClick={finalizeScore} disabled={!outcomeView.isScored}>Final</button>
                 </div>
             </form>
 
@@ -313,7 +326,7 @@ const MatchScreen = ({ tournamentId, matchId }) => {
     );
 };
 
-const TeamCard = ({ team, players = [], onScoreChange, onReset, formik, teamName }) => (
+const TeamCard = ({ team, players = [], onScoreChange, onReset, formik, teamName, disabled }) => (
     <div className={stl.teamCard}>
         <div className={stl.teamHeader}>
             <h4>Team {team?.team_id || 'Unknown'}</h4>
@@ -334,12 +347,13 @@ const TeamCard = ({ team, players = [], onScoreChange, onReset, formik, teamName
             onChange={(e) => formik.setFieldValue(teamName, Math.max(0, Number(e.target.value) || 0))}
             error={Boolean(formik.errors[teamName])}
             helperText={formik.errors[teamName]}
+            disabled={disabled}
         />
         
         <div className={stl.scoreControls}>
-            <button type="button" onClick={() => onScoreChange(1)}>+1</button>
-            <button type="button" onClick={() => onScoreChange(-1)}>-1</button>
-            <button type="button" className={stl.reset} onClick={onReset}>Reset</button>
+            <button type="button" onClick={() => onScoreChange(1)} disabled={disabled}>+1</button>
+            <button type="button" onClick={() => onScoreChange(-1)} disabled={disabled}>-1</button>
+            <button type="button" className={stl.reset} onClick={onReset} disabled={disabled}>Reset</button>
         </div>
     </div>
 );

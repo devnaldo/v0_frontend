@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { apiCall } from '@/store/utils';
 import { endpoints } from '@/store/urls';
 import stl from './RefereeMatchTable.module.scss';
 import toast from 'react-hot-toast';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField } from '@mui/material';
-import { getOutcomeView } from '@/utils/matchOutcome';
+import { DECLARABLE_OUTCOMES, getOutcomeView } from '@/utils/matchOutcome';
 import { OutcomeBadge } from '@/components/common/OutcomeBadge/OutcomeBadge';
 
 const RefereeMatchTable = ({ tournamentId }) => {
@@ -15,30 +15,33 @@ const RefereeMatchTable = ({ tournamentId }) => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [scores, setScores] = useState({ team1Score: 0, team2Score: 0 });
   const [modalType, setModalType] = useState('start'); // 'start' or 'completed'
+  const [outcomeDialog, setOutcomeDialog] = useState(null);
+  const [outcomeWinnerId, setOutcomeWinnerId] = useState(null);
+  const [declaringOutcome, setDeclaringOutcome] = useState(false);
+
+  const fetchMatches = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiCall(endpoints.getFixtures, {
+        params: { tournament_id: tournamentId }
+      });
+
+      if (response && response.matches) {
+        setMatches(response.matches);
+      }
+    } catch (error) {
+      console.error('Failed to fetch matches:', error);
+      toast.error('Failed to load matches');
+    } finally {
+      setLoading(false);
+    }
+  }, [tournamentId]);
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        setLoading(true);
-        const response = await apiCall(endpoints.getFixtures, {
-          params: { tournament_id: tournamentId }
-        });
-
-        if (response && response.matches) {
-          setMatches(response.matches);
-        }
-      } catch (error) {
-        console.error('Failed to fetch matches:', error);
-        toast.error('Failed to load matches');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (tournamentId) {
       fetchMatches();
     }
-  }, [tournamentId]);
+  }, [tournamentId, fetchMatches]);
 
   const handleStartMatch = async (match) => {
     try {
@@ -145,6 +148,44 @@ const RefereeMatchTable = ({ tournamentId }) => {
     setShowStatusModal(true);
   };
 
+  const handleOutcomeClick = (match, outcome) => {
+    setOutcomeDialog({ match, outcome });
+    setOutcomeWinnerId(null);
+  };
+
+  const closeOutcomeDialog = () => {
+    if (declaringOutcome) return;
+    setOutcomeDialog(null);
+    setOutcomeWinnerId(null);
+  };
+
+  const handleDeclareOutcome = async () => {
+    if (!outcomeDialog || !outcomeWinnerId) return;
+
+    const { match, outcome } = outcomeDialog;
+    try {
+      setDeclaringOutcome(true);
+      const response = await apiCall(endpoints.updateMatchOutcome, {
+        method: 'POST',
+        body: {
+          match_id: match.match_id,
+          tournament_id: tournamentId,
+          outcome_type: outcome.key,
+          winner_team_id: outcomeWinnerId
+        }
+      });
+
+      toast.success(response?.message || `${outcome.label} declared successfully`);
+      setOutcomeDialog(null);
+      setOutcomeWinnerId(null);
+      await fetchMatches();
+    } catch (error) {
+      toast.error(error.message || `Failed to declare ${outcome.label}`);
+    } finally {
+      setDeclaringOutcome(false);
+    }
+  };
+
   if (loading) {
     return <div className={stl.loading}>Loading matches...</div>;
   }
@@ -247,6 +288,17 @@ const RefereeMatchTable = ({ tournamentId }) => {
                         </button>
                       )
                     )}
+                    {(match.match_status.status === 'pending' || match.match_status.status === 'on-going') && (
+                      DECLARABLE_OUTCOMES.map(outcome => (
+                        <button
+                          key={outcome.key}
+                          onClick={() => handleOutcomeClick(match, outcome)}
+                          className={stl.finalizeButton}
+                        >
+                          Declare {outcome.label}
+                        </button>
+                      ))
+                    )}
                     {match.match_status.status === 'completed' && outcomeView.isScored && (
                       <button 
                         onClick={() => handleEditClick(match)}
@@ -307,6 +359,49 @@ const RefereeMatchTable = ({ tournamentId }) => {
               Override Score
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(outcomeDialog)}
+        onClose={closeOutcomeDialog}
+      >
+        <DialogTitle>Declare {outcomeDialog?.outcome.label}</DialogTitle>
+        <DialogContent>
+          <p>Select the winning team.</p>
+          <Button
+            fullWidth
+            variant={outcomeWinnerId === outcomeDialog?.match?.team1?.team_id ? 'contained' : 'outlined'}
+            onClick={() => setOutcomeWinnerId(outcomeDialog.match.team1.team_id)}
+            disabled={declaringOutcome}
+          >
+            {outcomeDialog?.match?.team1_players}
+          </Button>
+          <Button
+            fullWidth
+            variant={outcomeWinnerId === outcomeDialog?.match?.team2?.team_id ? 'contained' : 'outlined'}
+            onClick={() => setOutcomeWinnerId(outcomeDialog.match.team2.team_id)}
+            disabled={declaringOutcome}
+            style={{ marginTop: '0.75rem' }}
+          >
+            {outcomeDialog?.match?.team2_players}
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={closeOutcomeDialog}
+            disabled={declaringOutcome}
+            style={{ color: '#F28C28' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeclareOutcome}
+            disabled={!outcomeWinnerId || declaringOutcome}
+            style={{ color: '#4CAF50' }}
+          >
+            {declaringOutcome ? 'Declaring...' : 'Confirm'}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>
