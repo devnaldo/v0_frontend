@@ -7,6 +7,8 @@ import KnockoutBracket2 from './KnockoutBracket2';
 import { endpoints } from '@/store/urls';
 import { apiCall } from '@/store/utils';
 import toast from 'react-hot-toast';
+import { getOutcomeView } from '@/utils/matchOutcome';
+import { OutcomeBadge, WinnerBadge } from '@/components/common/OutcomeBadge/OutcomeBadge';
 
 const TournamentFixtures = ({ tournamentId, totalRounds }) => {
     const router = useRouter();
@@ -108,47 +110,58 @@ const TournamentFixtures = ({ tournamentId, totalRounds }) => {
     const renderMatches = (matches = []) => {
         if (!Array.isArray(matches)) return null;
         
-        return matches.map((match) => (
-            <div
-                key={match.match_id}
-                className={`${styles.matchCard} ${match.status === 'completed' ? styles.completed : ''}`}
-                onClick={() => handleMatchClick(match)}
-            >
-                <div className={styles.matchId}>
-                    Match ID: {match.match_id}
-                </div>
+        return matches.map((match) => {
+            const outcomeView = getOutcomeView(match);
 
-                <div className={styles.teams}>
-                    <div className={`${styles.team} ${
-                        match.team1_checked_in === true ? styles.checkedIn : ''
-                    }`}>
-                        <div className={styles.teamPlayers}>{match.team1_players}</div>
-                        {match.team1_id && (
-                            <div className={styles.teamId}>Team ID: {match.team1_id}</div>
-                        )}
-                        <div className={styles.score}>{match.team1Score}</div>
+            return (
+                <div
+                    key={match.match_id}
+                    className={`${styles.matchCard} ${match.status === 'completed' ? styles.completed : ''}`}
+                    onClick={() => handleMatchClick(match)}
+                >
+                    <div className={styles.matchId}>
+                        Match ID: {match.match_id}
                     </div>
-                    <div className={styles.vs}>vs</div>
-                    <div className={`${styles.team} ${
-                        match.team2_checked_in === true ? styles.checkedIn : ''
-                    }`}>
-                        <div className={styles.teamPlayers}>{match.team2_players}</div>
-                        {match.team2_id && (
-                            <div className={styles.teamId}>Team ID: {match.team2_id}</div>
-                        )}
-                        <div className={styles.score}>{match.team2Score}</div>
-                    </div>
-                </div>
 
-                <div className={styles.matchInfo}>
-                    <span className={styles.pool}>Pool: {match.pool}</span>
-                    <span className={styles.round}>{match.round_name}</span>
-                    <span className={`${styles.status} ${styles[match.status]}`}>
-                        {match.status.charAt(0).toUpperCase() + match.status.slice(1)}
-                    </span>
+                    <div className={styles.teams}>
+                        <div className={`${styles.team} ${
+                            match.team1_checked_in === true ? styles.checkedIn : ''
+                        }`}>
+                            <div className={styles.teamPlayers}>{match.team1_players}</div>
+                            {match.team1_id && (
+                                <div className={styles.teamId}>Team ID: {match.team1_id}</div>
+                            )}
+                            <div className={styles.score}>
+                                {outcomeView.showTag && !outcomeView.isScored ? '—' : match.team1Score}
+                            </div>
+                            {outcomeView.showTag && outcomeView.winnerSide === 'team1' && <WinnerBadge />}
+                        </div>
+                        <div className={styles.vs}>vs</div>
+                        <div className={`${styles.team} ${
+                            match.team2_checked_in === true ? styles.checkedIn : ''
+                        }`}>
+                            <div className={styles.teamPlayers}>{match.team2_players}</div>
+                            {match.team2_id && (
+                                <div className={styles.teamId}>Team ID: {match.team2_id}</div>
+                            )}
+                            <div className={styles.score}>
+                                {outcomeView.showTag && !outcomeView.isScored ? '—' : match.team2Score}
+                            </div>
+                            {outcomeView.showTag && outcomeView.winnerSide === 'team2' && <WinnerBadge />}
+                        </div>
+                    </div>
+
+                    <div className={styles.matchInfo}>
+                        <span className={styles.pool}>Pool: {match.pool}</span>
+                        <span className={styles.round}>{match.round_name}</span>
+                        <span className={`${styles.status} ${styles[match.status]}`}>
+                            {match.status.charAt(0).toUpperCase() + match.status.slice(1)}
+                        </span>
+                        {outcomeView.showTag && <OutcomeBadge label={outcomeView.label} />}
+                    </div>
                 </div>
-            </div>
-        ));
+            );
+        });
     };
 
     if (loading) {

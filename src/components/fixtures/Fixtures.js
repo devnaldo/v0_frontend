@@ -7,6 +7,8 @@ import { apiCall } from '@/store/utils';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import KnockoutBracket from './KnockoutBracket';
+import { getOutcomeView } from '@/utils/matchOutcome';
+import { OutcomeBadge, WinnerBadge } from '@/components/common/OutcomeBadge/OutcomeBadge';
 
 
 const Fixtures = ({ 
@@ -289,45 +291,52 @@ const Fixtures = ({
 
     const renderMatches = (matches, isAssigned = false) => {
         return matches
-            .map((match) => (
-                <div
-                    key={match.match_id}
-                    className={`${styles.matchCard} ${
-                        !courtManagement && match.status === 'completed' ? styles.completed : ''
-                    } ${!courtManagement && referee ? styles.refereeMode : ''}`}
-                    onClick={() => handleMatchClick(match)}
-                >
-                    <div className={styles.matchId}>
-                        Match ID: {match.match_id}
-                    </div>
-                    <div className={styles.teams}>
-                        <div className={`${styles.team} ${
-                            match.team1_checked_in === true ? styles.checkedIn : ''
-                        }`}>
-                            <div className={styles.teamPlayers}>{match.team1_players}</div>
-                            {match.team1_id && (
-                                <div className={styles.teamId}>Team ID: {match.team1_id}</div>
-                            )}
-                            <div className={styles.score}>{match.team1Score}</div>
+            .map((match) => {
+                const outcomeView = getOutcomeView(match);
+
+                return (
+                    <div
+                        key={match.match_id}
+                        className={`${styles.matchCard} ${
+                            !courtManagement && match.status === 'completed' ? styles.completed : ''
+                        } ${!courtManagement && referee ? styles.refereeMode : ''}`}
+                        onClick={() => handleMatchClick(match)}
+                    >
+                        <div className={styles.matchId}>
+                            Match ID: {match.match_id}
                         </div>
-                        <div className={styles.vs}>vs</div>
-                        <div className={`${styles.team} ${
-                            match.team2_checked_in === true ? styles.checkedIn : ''
-                        }`}>
-                            <div className={styles.teamPlayers}>{match.team2_players}</div>
-                            {match.team2_id && (
-                                <div className={styles.teamId}>Team ID: {match.team2_id}</div>
-                            )}
-                            <div className={styles.score}>{match.team2Score}</div>
+                        <div className={styles.teams}>
+                            <div className={`${styles.team} ${
+                                match.team1_checked_in === true ? styles.checkedIn : ''
+                            }`}>
+                                <div className={styles.teamPlayers}>{match.team1_players}</div>
+                                {match.team1_id && (
+                                    <div className={styles.teamId}>Team ID: {match.team1_id}</div>
+                                )}
+                                <div className={styles.score}>{outcomeView.showTag && !outcomeView.isScored ? '—' : match.team1Score}</div>
+                                {outcomeView.showTag && outcomeView.winnerSide === 'team1' && <WinnerBadge />}
+                            </div>
+                            <div className={styles.vs}>vs</div>
+                            <div className={`${styles.team} ${
+                                match.team2_checked_in === true ? styles.checkedIn : ''
+                            }`}>
+                                <div className={styles.teamPlayers}>{match.team2_players}</div>
+                                {match.team2_id && (
+                                    <div className={styles.teamId}>Team ID: {match.team2_id}</div>
+                                )}
+                                <div className={styles.score}>{outcomeView.showTag && !outcomeView.isScored ? '—' : match.team2Score}</div>
+                                {outcomeView.showTag && outcomeView.winnerSide === 'team2' && <WinnerBadge />}
+                            </div>
+                        </div>
+                        <div className={styles.matchInfo}>
+                            <span className={styles.pool}>Pool: {match.pool}</span>
+                            <span className={styles.round}>{match.round_name}</span>
+                            {match.court_number && <span className={styles.courtAssigned}>Court: {match.court_number}</span>}
+                            {outcomeView.showTag && <OutcomeBadge label={outcomeView.label} />}
                         </div>
                     </div>
-                    <div className={styles.matchInfo}>
-                        <span className={styles.pool}>Pool: {match.pool}</span>
-                        <span className={styles.round}>{match.round_name}</span>
-                        {match.court_number && <span className={styles.courtAssigned}>Court: {match.court_number}</span>}
-                    </div>
-                </div>
-            ));
+                );
+            });
     };
 
     const renderGroupedMatches = (groupedMatches) => {
@@ -343,50 +352,57 @@ const Fixtures = ({
                         {courtNumber === 'unassigned' ? 'Unassigned' : `Court ${courtNumber}`}
                     </h3>
                     <div className={styles.courtMatches}>
-                        {matches.map((match) => (
-                            <div
-                                key={match.match_id}
-                                className={`${styles.matchCard} ${
-                                    !courtManagement && match.status === 'completed' ? styles.completed : ''
-                                } ${!courtManagement && referee ? styles.refereeMode : ''}`}
-                                onClick={() => handleMatchClick(match)}
-                            >
-                                <div className={styles.matchInfo}>
-                                    <div className={styles.matchId}>
-                                        Match ID: {match.match_id}
-                                    </div>
-                                    {match.round_name && (
-                                        <div className={styles.roundName}>
-                                            {match.round_name}
+                        {matches.map((match) => {
+                            const outcomeView = getOutcomeView(match);
+
+                            return (
+                                <div
+                                    key={match.match_id}
+                                    className={`${styles.matchCard} ${
+                                        !courtManagement && match.status === 'completed' ? styles.completed : ''
+                                    } ${!courtManagement && referee ? styles.refereeMode : ''}`}
+                                    onClick={() => handleMatchClick(match)}
+                                >
+                                    <div className={styles.matchInfo}>
+                                        <div className={styles.matchId}>
+                                            Match ID: {match.match_id}
                                         </div>
+                                        {match.round_name && (
+                                            <div className={styles.roundName}>
+                                                {match.round_name}
+                                            </div>
+                                        )}
+                                        {outcomeView.showTag && <OutcomeBadge label={outcomeView.label} />}
+                                    </div>
+                                    <div className={styles.teams}>
+                                        <div className={`${styles.team} ${
+                                            match.team1_checked_in ? styles.checkedIn : ''
+                                        }`}>
+                                            <div className={styles.teamPlayers}>{match.team1_players}</div>
+                                            {match.team1_id && (
+                                                <div className={styles.teamId}>Team ID: {match.team1_id}</div>
+                                            )}
+                                            <div className={styles.score}>{outcomeView.showTag && !outcomeView.isScored ? '—' : match.team1Score}</div>
+                                            {outcomeView.showTag && outcomeView.winnerSide === 'team1' && <WinnerBadge />}
+                                        </div>
+                                        <div className={styles.vs}>vs</div>
+                                        <div className={`${styles.team} ${
+                                            match.team2_checked_in ? styles.checkedIn : ''
+                                        }`}>
+                                            <div className={styles.teamPlayers}>{match.team2_players}</div>
+                                            {match.team2_id && (
+                                                <div className={styles.teamId}>Team ID: {match.team2_id}</div>
+                                            )}
+                                            <div className={styles.score}>{outcomeView.showTag && !outcomeView.isScored ? '—' : match.team2Score}</div>
+                                            {outcomeView.showTag && outcomeView.winnerSide === 'team2' && <WinnerBadge />}
+                                        </div>
+                                    </div>
+                                    {match.status === 'completed' && (
+                                        <div className={styles.status}>Completed</div>
                                     )}
                                 </div>
-                                <div className={styles.teams}>
-                                    <div className={`${styles.team} ${
-                                        match.team1_checked_in ? styles.checkedIn : ''
-                                    }`}>
-                                        <div className={styles.teamPlayers}>{match.team1_players}</div>
-                                        {match.team1_id && (
-                                            <div className={styles.teamId}>Team ID: {match.team1_id}</div>
-                                        )}
-                                        <div className={styles.score}>{match.team1Score}</div>
-                                    </div>
-                                    <div className={styles.vs}>vs</div>
-                                    <div className={`${styles.team} ${
-                                        match.team2_checked_in ? styles.checkedIn : ''
-                                    }`}>
-                                        <div className={styles.teamPlayers}>{match.team2_players}</div>
-                                        {match.team2_id && (
-                                            <div className={styles.teamId}>Team ID: {match.team2_id}</div>
-                                        )}
-                                        <div className={styles.score}>{match.team2Score}</div>
-                                    </div>
-                                </div>
-                                {match.status === 'completed' && (
-                                    <div className={styles.status}>Completed</div>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             ));
