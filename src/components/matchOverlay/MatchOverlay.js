@@ -6,6 +6,7 @@ import stl from './MatchOverlay.module.scss';
 import { apiCall } from '@/store/utils';
 import { endpoints } from '@/store/urls';
 import { io } from 'socket.io-client';
+import { getOutcomeView } from '@/utils/matchOutcome';
 
 const MatchOverlay = ({ matchId, tournamentId }) => {
     const [scoreData, setScoreData] = useState(null);
@@ -140,6 +141,8 @@ const MatchOverlay = ({ matchId, tournamentId }) => {
         return null;
     }
 
+    const outcomeView = getOutcomeView(scoreData);
+
     return (
         <div className={stl.overlay}>
             <div className={stl.scoreContainer}>
@@ -152,8 +155,14 @@ const MatchOverlay = ({ matchId, tournamentId }) => {
                 <div className={stl.scoreContent}>
                     <div className={stl.score}>
                         <span className={stl.teamId}>T{scoreData.team1?.team_id}</span>
-                        <span className={stl.scoreValue}>{scoreData.team1?.score || '0'}</span>
-                        <span className={stl.scoreValue}>{scoreData.team2?.score || '0'}</span>
+                        {outcomeView.showTag && !outcomeView.isScored ? (
+                            <span className={stl.outcomeValue}>{outcomeView.label}</span>
+                        ) : (
+                            <>
+                                <span className={stl.scoreValue}>{scoreData.team1?.score || '0'}</span>
+                                <span className={stl.scoreValue}>{scoreData.team2?.score || '0'}</span>
+                            </>
+                        )}
                         <span className={stl.teamId}>T{scoreData.team2?.team_id}</span>
                     </div>
                 </div>

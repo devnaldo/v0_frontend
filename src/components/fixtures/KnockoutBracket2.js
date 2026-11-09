@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Bracket, Seed, SeedItem, SeedTeam } from 'react-brackets';
+import { getOutcomeView } from '@/utils/matchOutcome';
 
 const CustomSeed = ({ seed, breakpoint }) => {
     return (
@@ -30,7 +31,7 @@ const CustomSeed = ({ seed, breakpoint }) => {
                         }}>
                             {seed.teams[0]?.name || 'TBD'}
                         </SeedTeam>
-                        {seed.teams[0]?.score !== undefined && (
+                        {seed.teams[0]?.score !== undefined && seed.teams[0]?.score !== null && (
                             <span style={{ 
                                 marginLeft: '8px',
                                 fontWeight: seed.teams[0]?.isWinner ? 'bold' : 'normal',
@@ -55,7 +56,7 @@ const CustomSeed = ({ seed, breakpoint }) => {
                         }}>
                             {seed.teams[1]?.name || 'TBD'}
                         </SeedTeam>
-                        {seed.teams[1]?.score !== undefined && (
+                        {seed.teams[1]?.score !== undefined && seed.teams[1]?.score !== null && (
                             <span style={{ 
                                 marginLeft: '8px',
                                 fontWeight: seed.teams[1]?.isWinner ? 'bold' : 'normal',
@@ -98,7 +99,10 @@ const KnockoutBracket2 = ({ matches }) => {
                 });
             }
 
-            const scores = match.match_result ? match.match_result.split('-').map(Number) : [0, 0];
+            const outcomeView = getOutcomeView(match);
+            const scores = outcomeView.isScored
+                ? (match.match_result ? match.match_result.split('-').map(Number) : [0, 0])
+                : [null, null];
             
             roundsMap.get(roundNum).seeds.push({
                 id: match.match_id,
@@ -106,12 +110,16 @@ const KnockoutBracket2 = ({ matches }) => {
                 teams: [
                     {
                         name: formatPlayerNames(match.team1_players),
-                        score: scores[0],
+                        score: outcomeView.isScored
+                            ? scores[0]
+                            : outcomeView.winnerSide === 'team1' ? outcomeView.label : null,
                         isWinner: match.match_status?.winner_team_id === match.team1?.team_id
                     },
                     {
                         name: formatPlayerNames(match.team2_players),
-                        score: scores[1],
+                        score: outcomeView.isScored
+                            ? scores[1]
+                            : outcomeView.winnerSide === 'team2' ? outcomeView.label : null,
                         isWinner: match.match_status?.winner_team_id === match.team2?.team_id
                     }
                 ]

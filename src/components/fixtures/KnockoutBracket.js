@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { SingleEliminationBracket, Match, SVGViewer, createTheme } from '@g-loot/react-tournament-brackets';
+import { getOutcomeView } from '@/utils/matchOutcome';
 
 const theme = createTheme({
     textColor: { main: '#000000', highlighted: '#07090D', dark: '#3E414D' },
@@ -70,6 +71,7 @@ const KnockoutBracket = ({ matches }) => {
         const transformedMatches = sortedMatches.map(match => {
             const roundNum = match.bracket_info?.round_number || 0;
             const position = match.bracket_info?.bracket_position || 0;
+            const outcomeView = getOutcomeView(match);
             
             return {
                 id: `${roundNum}-${position}`,
@@ -84,14 +86,18 @@ const KnockoutBracket = ({ matches }) => {
                 participants: [
                     {
                         id: match.team1?.team_id || 'TBD',
-                        resultText: match.match_result.split('-')[0] || null,
+                        resultText: outcomeView.isScored
+                            ? match.match_result.split('-')[0] || null
+                            : outcomeView.winnerSide === 'team1' ? outcomeView.label : null,
                         isWinner: match.match_status?.winner_team_id === match.team1?.team_id,
                         status: match.team1?.checked_in ? 'PLAYED' : null,
                         name: formatPlayerNames(match.team1_players)
                     },
                     {
                         id: match.team2?.team_id || 'TBD',
-                        resultText: match.match_result.split('-')[1] || null,
+                        resultText: outcomeView.isScored
+                            ? match.match_result.split('-')[1] || null
+                            : outcomeView.winnerSide === 'team2' ? outcomeView.label : null,
                         isWinner: match.match_status?.winner_team_id === match.team2?.team_id,
                         status: match.team2?.checked_in ? 'PLAYED' : null,
                         name: formatPlayerNames(match.team2_players)
