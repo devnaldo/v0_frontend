@@ -4,6 +4,8 @@ import { endpoints } from '@/store/urls';
 import stl from './RefereeMatchTable.module.scss';
 import toast from 'react-hot-toast';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField } from '@mui/material';
+import { getOutcomeView } from '@/utils/matchOutcome';
+import { OutcomeBadge } from '@/components/common/OutcomeBadge/OutcomeBadge';
 
 const RefereeMatchTable = ({ tournamentId }) => {
   const [matches, setMatches] = useState([]);
@@ -164,90 +166,99 @@ const RefereeMatchTable = ({ tournamentId }) => {
             </tr>
           </thead>
           <tbody>
-            {matches.map((match) => (
-              <tr key={match.match_id}>
-                <td>{match.match_id}</td>
-                <td>{match.round_name || `Round ${match.round_id}`}</td>
-                <td>{match.pool || '-'}</td>
-                <td>{match.team1_players}</td>
-                <td>{match.team2_players}</td>
-                <td>
-                  {editingMatch?.match_id === match.match_id ? (
-                    <div className={stl.scoreInputs}>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={scores.team1Score}
-                        onChange={(e) => setScores({ ...scores, team1Score: Math.max(0, parseInt(e.target.value) || 0) })}
-                      />
-                      <span>-</span>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={scores.team2Score}
-                        onChange={(e) => setScores({ ...scores, team2Score: Math.max(0, parseInt(e.target.value) || 0) })}
-                      />
-                    </div>
-                  ) : (
-                    match.match_result
-                  )}
-                </td>
-                <td>
-                  <span className={`${stl.status} ${stl[match.match_status.status]}`}>
-                    {match.match_status.status}
-                  </span>
-                </td>
-                <td>
-                  {match.match_status.status === 'pending' && (
-                    <button 
-                      onClick={() => handleStartMatchClick(match)}
-                      className={stl.startButton}
-                    >
-                      Start Match
-                    </button>
-                  )}
-                  {match.match_status.status === 'on-going' && (
-                    editingMatch?.match_id === match.match_id ? (
-                      <div className={stl.actionButtons}>
-                        <button 
-                          onClick={() => handleScoreUpdate(match)}
-                          className={stl.updateButton}
-                        >
-                          Update
-                        </button>
-                        <button 
-                          onClick={() => handleScoreUpdate(match, true)}
-                          className={stl.finalizeButton}
-                        >
-                          Finalize
-                        </button>
-                        <button 
-                          onClick={() => setEditingMatch(null)}
-                          className={stl.cancelButton}
-                        >
-                          Cancel
-                        </button>
+            {matches.map((match) => {
+              const outcomeView = getOutcomeView(match);
+
+              return (
+                <tr key={match.match_id}>
+                  <td>{match.match_id}</td>
+                  <td>{match.round_name || `Round ${match.round_id}`}</td>
+                  <td>{match.pool || '-'}</td>
+                  <td>{match.team1_players}</td>
+                  <td>{match.team2_players}</td>
+                  <td>
+                    {!outcomeView.isScored ? (
+                      <>
+                        <OutcomeBadge label={outcomeView.label} />
+                        {' '}Winner: {outcomeView.winnerPlayers}
+                      </>
+                    ) : editingMatch?.match_id === match.match_id ? (
+                      <div className={stl.scoreInputs}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={scores.team1Score}
+                          onChange={(e) => setScores({ ...scores, team1Score: Math.max(0, parseInt(e.target.value) || 0) })}
+                        />
+                        <span>-</span>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={scores.team2Score}
+                          onChange={(e) => setScores({ ...scores, team2Score: Math.max(0, parseInt(e.target.value) || 0) })}
+                        />
                       </div>
                     ) : (
+                      match.match_result
+                    )}
+                  </td>
+                  <td>
+                    <span className={`${stl.status} ${stl[match.match_status.status]}`}>
+                      {match.match_status.status}
+                    </span>
+                  </td>
+                  <td>
+                    {match.match_status.status === 'pending' && (
+                      <button
+                        onClick={() => handleStartMatchClick(match)}
+                        className={stl.startButton}
+                      >
+                        Start Match
+                      </button>
+                    )}
+                    {match.match_status.status === 'on-going' && (
+                      editingMatch?.match_id === match.match_id ? (
+                        <div className={stl.actionButtons}>
+                          <button
+                            onClick={() => handleScoreUpdate(match)}
+                            className={stl.updateButton}
+                          >
+                            Update
+                          </button>
+                          <button
+                            onClick={() => handleScoreUpdate(match, true)}
+                            className={stl.finalizeButton}
+                          >
+                            Finalize
+                          </button>
+                          <button
+                            onClick={() => setEditingMatch(null)}
+                            className={stl.cancelButton}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleEditClick(match)}
+                          className={stl.editButton}
+                        >
+                          Edit Score
+                        </button>
+                      )
+                    )}
+                    {match.match_status.status === 'completed' && outcomeView.isScored && (
                       <button 
                         onClick={() => handleEditClick(match)}
                         className={stl.editButton}
                       >
-                        Edit Score
+                        Override Score
                       </button>
-                    )
-                  )}
-                  {match.match_status.status === 'completed' && (
-                    <button 
-                      onClick={() => handleEditClick(match)}
-                      className={stl.editButton}
-                    >
-                      Override Score
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -3,6 +3,8 @@ import { apiCall } from '@/store/utils';
 import { endpoints } from '@/store/urls';
 import stl from './MatchTable.module.scss';
 import toast from 'react-hot-toast';
+import { getOutcomeView } from '@/utils/matchOutcome';
+import { OutcomeBadge } from '@/components/common/OutcomeBadge/OutcomeBadge';
 
 const MatchTable = ({ tournamentId }) => {
   const [matches, setMatches] = useState([]);
@@ -103,21 +105,32 @@ const MatchTable = ({ tournamentId }) => {
             </tr>
           </thead>
           <tbody>
-            {matches.map((match) => (
-              <tr key={match.match_id}>
-                <td>{match.match_id}</td>
-                <td>{match.round_name || `Round ${match.round_id}`}</td>
-                <td>{match.pool || '-'}</td>
-                <td>{match.team1_players}</td>
-                <td>{match.team2_players}</td>
-                <td>{match.match_result}</td>
-                <td>
-                  <span className={`${stl.status} ${stl[match.match_status.status]}`}>
-                    {match.match_status.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {matches.map((match) => {
+              const outcomeView = getOutcomeView(match);
+
+              return (
+                <tr key={match.match_id}>
+                  <td>{match.match_id}</td>
+                  <td>{match.round_name || `Round ${match.round_id}`}</td>
+                  <td>{match.pool || '-'}</td>
+                  <td>{match.team1_players}</td>
+                  <td>{match.team2_players}</td>
+                  <td>
+                    {!outcomeView.isScored ? (
+                      <>
+                        <OutcomeBadge label={outcomeView.label} />
+                        {' '}Winner: {outcomeView.winnerPlayers}
+                      </>
+                    ) : match.match_result}
+                  </td>
+                  <td>
+                    <span className={`${stl.status} ${stl[match.match_status.status]}`}>
+                      {match.match_status.status}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
