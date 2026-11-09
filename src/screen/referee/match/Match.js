@@ -42,10 +42,11 @@ const MatchScreen = ({ tournamentId, matchId }) => {
             }
 
             setMatchStatus(response.status || 'pending');
-            
-            if (response.status === 'completed') {
-                setShowStatusModal(true);
-            } else if (response.status === 'pending') {
+
+            // Non-scored outcomes (e.g. a declared walkover) have no score to
+            // override, so don't prompt for it.
+            const outcomeView = getOutcomeView(response);
+            if (response.status === 'pending' || (response.status === 'completed' && outcomeView.isScored)) {
                 setShowStatusModal(true);
             }
 
